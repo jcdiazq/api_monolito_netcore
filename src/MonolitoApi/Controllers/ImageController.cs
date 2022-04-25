@@ -11,7 +11,7 @@ using MonolitoApi.Models;
 
 namespace MonolitoApi.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api_1/[controller]")]
     [ApiController]
     public class ImageController : ControllerBase
     {
