@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using MonolitoApi.Models;
 // using MySql.Data.EntityFrameworkCore.Infraestructure;
 using MySql.EntityFrameworkCore.Infrastructure;
@@ -7,12 +8,14 @@ namespace MonolitoApi
 {
     public class MonolitoDbContext : DbContext
     {
+        private readonly string _contextConnection;
         public DbSet<Person> Person { get; set; }
         public DbSet<Image> Image { get; set; }
         
-        public MonolitoDbContext(DbContextOptions<MonolitoDbContext> options)
+        public MonolitoDbContext(DbContextOptions<MonolitoDbContext> options, IOptions<Settings.DbContextConnection> contextConnection)
             : base(options)
         {
+            _contextConnection = contextConnection.Value.ConnectionString;
             this.Database.EnsureCreated();
         }
 
@@ -22,7 +25,7 @@ namespace MonolitoApi
                 var m = new MySQLDbContextOptionsBuilder(optionsBuilder);
             };
 
-            optionsBuilder.UseMySQL("server=localhost;database=db;user=user;password=password", mysqlDbContextOB);
+            optionsBuilder.UseMySQL(_contextConnection, mysqlDbContextOB);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
