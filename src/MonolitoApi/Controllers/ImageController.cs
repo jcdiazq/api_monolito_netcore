@@ -32,8 +32,8 @@ namespace MonolitoApi.Controllers
             var images = await _context.Image.ToListAsync();
             for (var i = 0; i < images.Count(); i++)
             {
-                var fileImage = await _mongoDb.GetAsync(images[i].UUID);
-                images[i].fileImageBase64 = fileImage?.fileContent;
+                var fileImage = await _mongoDb.GetAsync(images[i].Uuid);
+                images[i].FileImageBase64 = fileImage?.FileContent;
             }
             return images;
         }
@@ -49,8 +49,8 @@ namespace MonolitoApi.Controllers
                 return NotFound();
             }
 
-            var fileImage = await _mongoDb.GetAsync(image.UUID);
-            image.fileImageBase64 = fileImage?.fileContent;
+            var fileImage = await _mongoDb.GetAsync(image.Uuid);
+            image.FileImageBase64 = fileImage?.FileContent;
 
             return image;
         }
@@ -58,34 +58,22 @@ namespace MonolitoApi.Controllers
         // PUT: api/Image/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutImage(int id, Image image)
+        public async Task<IActionResult> PutImage(int id, Image image, [FromServices] FileImage fileImage)
         {
-            var imageDb = await GetImage(id);
-            // var imageEntry = new Image() {
-            //     Name = image.Name, 
-            //     PersonId = image.PersonId, 
-            //     fileImageBase64 = image.fileImageBase64
-            //     };
-
             if (id != image.Id)
             {
                 return BadRequest();
             }
 
-            // var entry = _context.Entry(imageEntry);
-            var entry = _context.Entry(image);
-            entry.CurrentValues.SetValues(image.UUID);
-            entry.State = EntityState.Modified;
+            var imageDb = _context.Image.Find(id);
+            imageDb.Name = image.Name;
+            imageDb.FileImageBase64 = image.FileImageBase64;
+            imageDb.PersonId = image.PersonId;
+            imageDb.Uuid = await DoCreateOrUpdateFileImage(imageDb.Uuid, image.FileImageBase64, fileImage);
 
             try
             {
                 await _context.SaveChangesAsync();
-
-                if (!string.IsNullOrWhiteSpace(image.fileImageBase64))
-                {
-                    var fileImage = new FileImage() {fileContent = image.fileImageBase64};
-                    await _mongoDb.UpdateAsync(imageDb.Value.UUID, fileImage);
-                }
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -107,19 +95,15 @@ namespace MonolitoApi.Controllers
         [HttpPost]
         public async Task<ActionResult<Image>> PostImage(Image image, [FromServices] FileImage fileImage)
         {
-            var guid = Guid.NewGuid().ToString();
             try
             {
-                fileImage.Id = guid;
-                fileImage.fileContent = image.fileImageBase64;
-                await _mongoDb.CreateAsync(fileImage);
-                image.UUID = guid;
+                image.Uuid = await DoCreateOrUpdateFileImage(image.Uuid, image.FileImageBase64, fileImage);
                 _context.Image.Add(image);
                 await _context.SaveChangesAsync();
             }
             catch
             {
-                await _mongoDb.RemoveAsync(guid);
+                await _mongoDb.RemoveAsync(image.Uuid);
                 return BadRequest();
             }
 
@@ -138,9 +122,26 @@ namespace MonolitoApi.Controllers
 
             _context.Image.Remove(image);
             await _context.SaveChangesAsync();
-            await _mongoDb.RemoveAsync(image.UUID);
+            await _mongoDb.RemoveAsync(image.Uuid);
 
             return NoContent();
+        }
+
+        private async Task<string> DoCreateOrUpdateFileImage(string uuid, string contentImage, FileImage fileImage)
+        {
+            fileImage.Id = uuid;
+            fileImage.FileContent = contentImage;
+            if (!string.IsNullOrWhiteSpace(contentImage) && !string.IsNullOrWhiteSpace(uuid))
+            {
+                await _mongoDb.UpdateAsync(uuid, fileImage);
+            }
+            else if (!string.IsNullOrWhiteSpace(contentImage) && string.IsNullOrWhiteSpace(uuid))
+            {
+                fileImage.Id = Guid.NewGuid().ToString();;
+                await _mongoDb.CreateAsync(fileImage);
+            }
+
+            return fileImage.Id;
         }
 
         private bool ImageExists(int id)

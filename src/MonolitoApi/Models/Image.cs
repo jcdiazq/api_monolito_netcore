@@ -11,9 +11,9 @@ namespace MonolitoApi.Models
         public string Name { get; set; }
         [NotMapped]
         [Required(ErrorMessage = "Es Obligatorio el cargue de un archivo de imagen")]
-        public string fileImageBase64 { get; set; }
-        [JsonIgnore]
-        public string? UUID { get; set; }
+        public string FileImageBase64 { get; set; }
+        // [JsonIgnore]
+        public string? Uuid { get; set; }
         [Required(ErrorMessage = "Dato Obligatorio Id Relacionado con Persona")]
         public int PersonId { get; set; }
         [JsonIgnore]

@@ -36,7 +36,7 @@ namespace MonolitoApi
             {
                 entity.HasIndex(e => e.Id);
                 entity.Property(e => e.Name);
-                entity.Property(e => e.UUID);
+                entity.Property(e => e.Uuid);
                 entity.HasOne(i => i.Person)
                 .WithOne(p => p.Image)
                 .HasForeignKey<Image>(f => f.PersonId);

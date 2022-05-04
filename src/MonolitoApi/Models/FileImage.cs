@@ -8,6 +8,6 @@ namespace MonolitoApi.Models
         [BsonId]
         [BsonRepresentation(BsonType.String)]
         public string? Id { get; set; }
-        public string fileContent { get; set; }
+        public string FileContent { get; set; }
     }
 }
